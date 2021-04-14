@@ -122,5 +122,34 @@ public with sharing class PropertyController {
             ORDER BY CreatedDate
         ];
     }
+    @AuraEnabled(cacheable=true)
+    public static List<ContentVersion> bugFixCommit(Id propertyId) {
+        List<ContentDocumentLink> links = [
+            SELECT Id, LinkedEntityId, ContentDocumentId,field1__c,field2__c
+            FROM ContentDocumentLink
+            WHERE
+                LinkedEntityId = :propertyId
+                AND ContentDocument.FileType IN ('PNG', 'JPG', 'GIF')
+            WITH SECURITY_ENFORCED
+        ];
+
+        if (links.isEmpty()) {
+            return null;
+        }
+
+        Set<Id> contentIds = new Set<Id>();
+
+        for (ContentDocumentLink link : links) {
+            contentIds.add(link.ContentDocumentId);
+        }
+
+        return [
+            SELECT Id, Title
+            FROM ContentVersion
+            WHERE ContentDocumentId IN :contentIds AND IsLatest = TRUE
+            WITH SECURITY_ENFORCED
+            ORDER BY CreatedDate
+        ];
+    }
 }
 /*Commit 2*/
